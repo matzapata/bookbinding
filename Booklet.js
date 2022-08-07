@@ -42,44 +42,57 @@ Booklet.prototype.removePages = async function (removePagesStr) {
 };
 
 
-Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex) {
+Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex, rotate = false) {
     const page = this.bookletPdf.addPage(PageSizes.A4);
     page.setRotation(degrees(90)); // landscape orientation
+    const options = {
+        width: PageSizes.A4[1] / 2,
+        height: PageSizes.A4[0],
+    };
 
     if (leftIndex !== null) {
         const [pageLeft] = await this.bookletPdf.embedPdf(this.srcPdf, [leftIndex]);
-        page.drawPage(pageLeft, {
-            width: PageSizes.A4[1] / 2,
-            height: PageSizes.A4[0],
-            x: PageSizes.A4[0],
-            y: 0,
-            rotate: degrees(90),
-        });
+
+        if (rotate) {
+            options.x = 0
+            options.y = PageSizes.A4[1] / 2
+            options.rotate = degrees(270)
+        } else  {
+            options.x = PageSizes.A4[0]
+            options.y = 0
+            options.rotate = degrees(90)
+        }
+        page.drawPage(pageLeft, options);
     }
 
     if (rightIndex !== null) {
         const [pageRight] = await this.bookletPdf.embedPdf(this.srcPdf, [rightIndex]);
 
-        page.drawPage(pageRight, {
-            width: PageSizes.A4[1] / 2,
-            height: PageSizes.A4[0],
-            x: PageSizes.A4[0],
-            y: PageSizes.A4[1] / 2,
-            rotate: degrees(90),
-        });
+        if (rotate) {
+            options.x = 0
+            options.y = PageSizes.A4[1]
+            options.rotate = degrees(270)
+        } else  {
+            options.x = PageSizes.A4[0]
+            options.y = PageSizes.A4[1] / 2
+            options.rotate = degrees(90)
+        }
+        page.drawPage(pageRight, options);
     }
+
 };
+
 
 Booklet.prototype._getNextPaginationPage = function () {
     if (this.bookletNum * 4 > this.srcPdfPageCount) return null;
 
     const basePage = this.bookletNum * 4;
     const pagination = [[basePage + 3, basePage], [basePage + 2, basePage + 1]];
-    
-    if (pagination[0][0] > this.srcPdfPageCount-1) pagination[0][0] = null;
-    if (pagination[0][1] > this.srcPdfPageCount-1) pagination[0][1] = null;
-    if (pagination[1][0] > this.srcPdfPageCount-1) pagination[1][0] = null;
-    if (pagination[1][1] > this.srcPdfPageCount-1) pagination[1][1] = null;
+
+    if (pagination[0][0] > this.srcPdfPageCount - 1) pagination[0][0] = null;
+    if (pagination[0][1] > this.srcPdfPageCount - 1) pagination[0][1] = null;
+    if (pagination[1][0] > this.srcPdfPageCount - 1) pagination[1][0] = null;
+    if (pagination[1][1] > this.srcPdfPageCount - 1) pagination[1][1] = null;
 
     this.bookletNum++;
 
@@ -87,14 +100,11 @@ Booklet.prototype._getNextPaginationPage = function () {
 };
 
 Booklet.prototype.create = async function () {
-  console.log(this.srcPdf.getPageCount())
-  
-  let pagination = this._getNextPaginationPage();
-  while (pagination) {
-      await this._addBookletPage(pagination[0][0], pagination[0][1]);
-      await this._addBookletPage(pagination[1][0], pagination[1][1]);
-      pagination = this._getNextPaginationPage();
-      console.log(pagination)
+    let pagination = this._getNextPaginationPage();
+    while (pagination) {
+        await this._addBookletPage(pagination[0][0], pagination[0][1]);
+        await this._addBookletPage(pagination[1][0], pagination[1][1], true);
+        pagination = this._getNextPaginationPage();
     }
 };
 
