@@ -9,6 +9,7 @@ function Booklet(srcFilename, destFilename) {
     this.srcPdfPageCount = 0;
     this.removedPages = [];
     this.bookletNum = 0;
+    this.hasCover = false;
 }
 
 Booklet.prototype.init = async function () {
@@ -25,20 +26,43 @@ Booklet.prototype.save = async function () {
     });
 };
 
-Booklet.prototype.removePages = async function (removePagesStr) {
-    const pages = removePagesStr.replace(/\s/g, '').split(',');
+Booklet.prototype.saveCover = async function (filename) {
+    const coverPdf = await PDFDocument.create();
+    const page = coverPdf.addPage(PageSizes.A5);
 
-    for (const page of pages) {
+    const [cover] = await coverPdf.embedPdf(this.srcPdf, [0]);
+
+    page.drawPage(cover, {
+        width: PageSizes.A5[0],
+        height: PageSizes.A5[1],
+        x: 0,
+        y: 0,
+    });
+
+    const dataBytes = await coverPdf.save();
+    fs.writeFile(filename, dataBytes, "utf8", (err, data) => {
+        if (err) throw new Error(`Couldn't save file: ${err.message}`);
+    });
+
+    this.hasCover = true;
+};
+
+Booklet.prototype.removePages = async function (removePagesStr) {
+    const pagesToRemove = (removePagesStr === "") ? [] : removePagesStr.replace(/\s/g, '').split(',');
+    if (this.hasCover) pagesToRemove.unshift("1");
+
+    for (const page of pagesToRemove) {
         const range = page.split('-');
         if (range.length === 2) {
             for (let i = parseInt(range[0]); i <= parseInt(range[1]); i++) this.removedPages.push(i - 1 - this.removedPages.length);
         } else this.removedPages.push(parseInt(page) - 1 - this.removedPages.length);
     }
 
-    this.removedPages.forEach((index) => this.srcPdf.removePage(index));
-    this.srcPdfPageCount = this.srcPdf.getPageCount();
-
-    this.srcPdf = await PDFDocument.load(await this.srcPdf.save());
+    if (this.removePages.length) {
+        this.removedPages.forEach((index) => this.srcPdf.removePage(index));
+        this.srcPdfPageCount = this.srcPdf.getPageCount();
+        this.srcPdf = await PDFDocument.load(await this.srcPdf.save());
+    }
 };
 
 
@@ -54,13 +78,13 @@ Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex, rotat
         const [pageLeft] = await this.bookletPdf.embedPdf(this.srcPdf, [leftIndex]);
 
         if (rotate) {
-            options.x = 0
-            options.y = PageSizes.A4[1] / 2
-            options.rotate = degrees(270)
-        } else  {
-            options.x = PageSizes.A4[0]
-            options.y = 0
-            options.rotate = degrees(90)
+            options.x = 0;
+            options.y = PageSizes.A4[1] / 2;
+            options.rotate = degrees(270);
+        } else {
+            options.x = PageSizes.A4[0];
+            options.y = 0;
+            options.rotate = degrees(90);
         }
         page.drawPage(pageLeft, options);
     }
@@ -69,13 +93,13 @@ Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex, rotat
         const [pageRight] = await this.bookletPdf.embedPdf(this.srcPdf, [rightIndex]);
 
         if (rotate) {
-            options.x = 0
-            options.y = PageSizes.A4[1]
-            options.rotate = degrees(270)
-        } else  {
-            options.x = PageSizes.A4[0]
-            options.y = PageSizes.A4[1] / 2
-            options.rotate = degrees(90)
+            options.x = 0;
+            options.y = PageSizes.A4[1];
+            options.rotate = degrees(270);
+        } else {
+            options.x = PageSizes.A4[0];
+            options.y = PageSizes.A4[1] / 2;
+            options.rotate = degrees(90);
         }
         page.drawPage(pageRight, options);
     }
