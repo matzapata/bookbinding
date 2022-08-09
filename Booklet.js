@@ -10,6 +10,8 @@ function Booklet(srcFilename, destFilename) {
     this.removedPages = [];
     this.bookletNum = 0;
     this.hasCover = false;
+    this.dpi = 72;
+    this.margins = { top: 0, bottom: 0, outside: 0, inside: 0 };
 }
 
 Booklet.prototype.init = async function () {
@@ -18,6 +20,35 @@ Booklet.prototype.init = async function () {
     this.srcPdfPageCount = this.srcPdf.getPageCount();
 };
 
+Booklet.prototype.crop = async function (top, right, bottom, left) {
+    const croppedPdf = await PDFDocument.create();
+
+    for (const pageIndex of this.srcPdf.getPageIndices()) {
+        const page = croppedPdf.addPage(PageSizes.A5);
+        const srcPage = this.srcPdf.getPage(pageIndex);
+
+        const croppedPage = await croppedPdf.embedPage(
+            srcPage, {
+            left: 0 + left,
+            bottom: 0 + bottom,
+            right: srcPage.getSize().width - right,
+            top: srcPage.getSize().height - top,
+        });
+
+        page.drawPage(croppedPage, {
+            width: PageSizes.A5[0],
+            height: PageSizes.A5[1],
+            x: 0,
+            y: 0,
+        });
+    }
+
+    this.srcPdf = await PDFDocument.load(await croppedPdf.save());
+};
+
+Booklet.prototype.cropInches = function (top, right, bottom, left) {
+    return this.crop(top * this.dpi, right * this.dpi, bottom * this.dpi, left * this.dpi);
+};
 
 Booklet.prototype.save = async function () {
     const dataBytes = await this.bookletPdf.save();
@@ -67,43 +98,42 @@ Booklet.prototype.removePages = async function (removePagesStr) {
 
 
 Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex, rotate = false) {
-    const page = this.bookletPdf.addPage(PageSizes.A4);
-    page.setRotation(degrees(90)); // landscape orientation
+    const pageA4 = this.bookletPdf.addPage(PageSizes.A4);
+    pageA4.setRotation(degrees(90)); // landscape orientation
     const options = {
-        width: PageSizes.A4[1] / 2,
-        height: PageSizes.A4[0],
+        width: (pageA4.getHeight() / 2) - (this.margins.inside + this.margins.outside),
+        height: pageA4.getWidth() - (this.margins.top + this.margins.bottom),
     };
 
     if (leftIndex !== null) {
         const [pageLeft] = await this.bookletPdf.embedPdf(this.srcPdf, [leftIndex]);
 
         if (rotate) {
-            options.x = 0;
-            options.y = PageSizes.A4[1] / 2;
+            options.x = this.margins.bottom;
+            options.y = pageA4.getHeight() / 2 - this.margins.inside;
             options.rotate = degrees(270);
         } else {
-            options.x = PageSizes.A4[0];
-            options.y = 0;
+            options.x = pageA4.getWidth() - this.margins.bottom;
+            options.y = this.margins.outside;
             options.rotate = degrees(90);
         }
-        page.drawPage(pageLeft, options);
+        pageA4.drawPage(pageLeft, options);
     }
 
     if (rightIndex !== null) {
         const [pageRight] = await this.bookletPdf.embedPdf(this.srcPdf, [rightIndex]);
 
         if (rotate) {
-            options.x = 0;
-            options.y = PageSizes.A4[1];
+            options.x = this.margins.top;
+            options.y = pageA4.getHeight() - this.margins.outside;
             options.rotate = degrees(270);
         } else {
-            options.x = PageSizes.A4[0];
-            options.y = PageSizes.A4[1] / 2;
+            options.x = pageA4.getWidth() - this.margins.bottom;
+            options.y = pageA4.getHeight() / 2 + this.margins.inside;
             options.rotate = degrees(90);
         }
-        page.drawPage(pageRight, options);
+        pageA4.drawPage(pageRight, options);
     }
-
 };
 
 
@@ -132,5 +162,15 @@ Booklet.prototype.create = async function () {
     }
 };
 
+Booklet.prototype.setMarginsInches = function (top, bottom, outside, inside) {
+    this.margins = {
+        top: top * this.dpi,
+        bottom: bottom * this.dpi,
+        outside: outside * this.dpi,
+        inside: inside * this.dpi
+    };
+
+    return this.margins;
+};
 
 module.exports = Booklet;
