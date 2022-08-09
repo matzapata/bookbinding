@@ -8,13 +8,19 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "bk": "index.js"
+    "bk": "bin/bookbinding"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "inquirer": "^8.0.0",
     "pdf-lib": "^1.17.1",
-    "yargs": "^17.5.1"
-  }
+    "gluegun": "latest"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "readme.md",
+    "docs",
+    "bin"
+  ]
 }

@@ -1,64 +1,63 @@
+
 const questions = [];
 
+// Has cover
 questions.push({
     type: "confirm",
     name: "hasCover",
     message: "Does it has a cover?",
-    default: true,
+    initial: true,
 });
-
+// Remove pages
 questions.push({
     type: "input",
     name: "removePages",
     message: "Input pages to remove as a string. You can use (,) and (-) to specify individual pages and ranges respectively. Use PDF page numeration.",
-    default: "",
+    initial: "",
 });
-
 // Crop
 questions.push({
-    type: "number",
+    type: "input",
     name: "cropTop",
     message: "Crop top (inches): ",
-    default: 0,
+    initial: 0,
 }, {
-    type: "number",
+    type: "input",
     name: "cropRight",
     message: "Crop right (inches): ",
-    default: 0,
+    initial: 0,
 }, {
-    type: "number",
+    type: "input",
     name: "cropBottom",
     message: "Crop bottom (inches): ",
-    default: 0,
+    initial: 0,
 }, {
-    type: "number",
+    type: "input",
     name: "cropLeft",
     message: "Crop left (inches): ",
-    default: 0,
+    initial: 0,
 });
-
 // Margins
 questions.push({
-    type: "number",
+    type: "input",
     name: "marginTop",
     message: "Margin top (inches): ",
-    default: 0.2,
+    initial: 0.2,
 }, {
-    type: "number",
+    type: "input",
     name: "marginBottom",
     message: "Margin bottom (inches): ",
-    default: 0.2,
+    initial: 0.2,
 }, {
-    type: "number",
+    type: "input",
     name: "marginOutside",
     message: "Margin outside (inches): ",
-    default: 0.2,
+    initial: 0.2,
 }, {
-    type: "number",
+    type: "input",
     name: "marginInside",
     message: "Margin inside (inches): ",
-    default: 0.3,
-}
-);
+    initial: 0.3,
+});
 
 module.exports = questions;
