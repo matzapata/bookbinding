@@ -1,4 +1,4 @@
-const { PDFDocument, PageSizes, degrees } = require('pdf-lib');
+const { PDFDocument, PageSizes, degrees, rgb } = require('pdf-lib');
 const fs = require('fs/promises');
 
 function Booklet(srcFilename, destFilename) {
@@ -134,6 +134,14 @@ Booklet.prototype._addBookletPage = async function (leftIndex, rightIndex, rotat
         }
         pageA4.drawPage(pageRight, options);
     }
+
+    pageA4.drawLine({
+        start: { x: 0, y: pageA4.getHeight() / 2 },
+        end: { x: pageA4.getWidth(), y: pageA4.getHeight() / 2 },
+        thickness: 2,
+        color: rgb(0.48, 0.48, 0.48),
+        opacity: 1,
+    });
 };
 
 
